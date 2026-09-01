@@ -58,11 +58,13 @@
     /* ヘッダー＆タイトル */
     .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding: 0 2px; }
     .title-group { display: flex; align-items: center; gap: 4px; flex-shrink: 1; min-width: 0; }
+    
+    /* ▼ ヘッダーアイコンを青色に変換 */
     .title-icon { 
       height: 32px; 
       width: auto; 
       vertical-align: middle; 
-      filter: drop-shadow(0px 2px 3px rgba(74, 144, 226, 0.2));
+      filter: drop-shadow(0px 2px 3px rgba(74, 144, 226, 0.2)) hue-rotate(200deg) saturate(1.2);
       transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       flex-shrink: 0;
     }
@@ -397,7 +399,12 @@
     .os-toggle-btn { background: var(--accent-soft); color: var(--text-main); border: 1px solid #90CAF9; padding: 10px 12px; border-radius: var(--radius-s); width: 100%; font-weight: bold; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; margin-bottom: 6px; }
     .os-guide-content { background: white; padding: 12px 14px; border-radius: var(--radius-s); border: 1px solid var(--border-color); font-size: 13px; line-height: 1.6; color: var(--text-main); margin-bottom: 10px; }
     .os-guide-content ol { margin: 0; padding-left: 18px; }
-    .custom-neko-icon { width: auto !important; height: 38px !important; object-fit: contain; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.3)); }
+    
+    /* ▼ マップピンアイコンを青色に変換 */
+    .custom-neko-icon { 
+      width: auto !important; height: 38px !important; object-fit: contain; 
+      filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.3)) hue-rotate(200deg) saturate(1.2); 
+    }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes modalPop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
