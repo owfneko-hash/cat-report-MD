@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ねこログ 南大東</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- フォント読み込み -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    :root {
+      /* 青色ベースのカラーパレット */
+      --bg-color: #F4F7FB;
+      --card-bg: #FFFFFF;
+      --accent-primary: #4A90E2;
+      --accent-hover: #357ABD;
+      --accent-light: #BBDEFB;
+      --accent-soft: #E3F2FD;
+      --btn-sub-bg: #1565C0;
+      --btn-sub-hover: #0D47A1;
+      --text-main: #1C2833;
+      --text-sub: #546E7A;
+      --border-color: #D6E4F0;
+      --radius-lg: 20px;
+      --radius-m: 14px;
+      --radius-s: 10px;
+      --shadow-soft: 0 6px 20px rgba(74, 144, 226, 0.06);
+      --shadow-btn: 0 4px 12px rgba(74, 144, 226, 0.2);
+    }
+
+    body { 
+      font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif; 
+      margin: 0; 
+      padding: 6px; 
+      background-color: var(--bg-color); 
+      color: var(--text-main); 
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: var(--card-bg); 
+      padding: 18px 10px; 
+      border-radius: var(--radius-lg); 
+      box-shadow: var(--shadow-soft); 
+      border: 1px solid var(--border-color); 
+      box-sizing: border-box; 
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    /* ヘッダー＆タイトル */
+    .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding: 0 2px; }
+    .title-group { display: flex; align-items: center; gap: 4px; flex-shrink: 1; min-width: 0; }
+    .title-icon { 
+      height: 32px; 
+      width: auto; 
+      vertical-align: middle; 
+      filter: drop-shadow(0px 2px 3px rgba(74, 144, 226, 0.2));
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      flex-shrink: 0;
+    }
+    .title-group:hover .title-icon { transform: rotate(-8deg) scale(1.1); }
+
+    h2 { 
+      margin: 0; 
+      color: var(--accent-primary); 
+      font-size: 21px; 
+      font-weight: 900; 
+      letter-spacing: 0.5px; 
+      text-shadow: 2px 2px 0px var(--accent-soft);
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* タイトル横のサブテキスト */
+    .title-sub-text {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-sub);
+      line-height: 1.2;
+      margin-left: 4px;
+      margin-right: 12px; 
+      letter-spacing: 0.3px;
+      flex-shrink: 1;
+    }
+
+    /* ヘッダー右側の丸ボタン群 */
+    .header-buttons { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .btn-circle-icon { 
+      background: var(--accent-soft); 
+      border: 1px solid var(--border-color); 
+      border-radius: 50%; 
+      width: 40px; 
+      height: 40px; 
+      font-size: 18px; 
+      cursor: pointer; 
+      transition: all 0.2s ease; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 0; 
+      color: var(--accent-primary);
+      box-sizing: border-box;
+    }
+    .btn-circle-icon:active { transform: scale(0.9); }
+
+    /* 薄くて幅広な「みんなのねこマップ」ボタン */
+    .map-nav-container { margin-bottom: 20px; }
+    .btn-map-wide { 
+      width: 100%; 
+      background: linear-gradient(135deg, #F0F8FF 0%, #E3F2FD 100%); 
+      color: var(--accent-primary); 
+      padding: 12px; 
+      border: 1.5px solid #90CAF9; 
+      border-radius: var(--radius-m); 
+      cursor: pointer; 
+      font-size: 15px; 
+      font-weight: 900; 
+      text-align: center; 
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.08); 
+      transition: all 0.2s ease; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+    .btn-map-wide:active { transform: translateY(2px); box-shadow: none; }
+
+    /* フォームグループ */
+    .form-group { 
+      margin-bottom: 18px; 
+      background: var(--accent-soft); 
+      padding: 14px; 
+      border-radius: var(--radius-m); 
+      border: 1px dashed #90CAF9; 
+      transition: border-color 0.2s ease;
+    }
+    .form-group:focus-within { border-color: var(--accent-primary); }
+
+    label { font-weight: 700; display: block; margin-bottom: 8px; color: #1565C0; font-size: 15px; }
+    .required::after { content: " *"; color: #E74C3C; }
+    
+    #map { height: 450px; width: 100%; border-radius: var(--radius-s); border: 1.5px solid var(--border-color); box-sizing: border-box; }
+    .hidden { display: none !important; }
+    
+    input[type="text"], select, input[type="date"], textarea { 
+      width: 100%; 
+      padding: 10px 12px; 
+      border: 1.5px solid var(--border-color); 
+      border-radius: var(--radius-s); 
+      box-sizing: border-box; 
+      font-size: 15px; 
+      font-family: inherit; 
+      background: white; 
+      color: var(--text-main); 
+      transition: all 0.2s ease;
+    }
+    input[type="text"]:focus, select:focus, input[type="date"]:focus, textarea:focus { 
+      outline: none; 
+      border-color: var(--accent-primary); 
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15); 
+    }
+
+    input[type="file"] { 
+      width: 100%; 
+      padding: 8px; 
+      border: 1.5px dashed #90CAF9; 
+      border-radius: var(--radius-s); 
+      box-sizing: border-box; 
+      font-size: 13px; 
+      font-family: inherit; 
+      background: white; 
+      color: var(--text-main); 
+      white-space: normal; 
+      word-break: break-all; 
+    }
+    input[type="file"]::file-selector-button { 
+      background: var(--accent-light); 
+      color: var(--text-main); 
+      border: none; 
+      border-radius: 8px; 
+      padding: 6px 12px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      margin-right: 10px; 
+      transition: background 0.2s ease;
+    }
+
+    /* カウント入力用リスト */
+    .count-list { display: flex; flex-direction: column; gap: 8px; background: white; padding: 10px; border-radius: var(--radius-s); border: 1.5px solid var(--border-color); }
+    .count-row { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid var(--bg-color); cursor: pointer; user-select: none; }
+    .count-row:last-child { border-bottom: none; }
+    .count-row.selected { background-color: var(--accent-soft); }
+    .count-label { font-weight: bold; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 6px; flex-grow: 1; }
+    
+    .stepper-control { display: flex; align-items: center; gap: 6px; }
+    .btn-step { 
+      width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border-color); 
+      background: var(--accent-soft); color: var(--accent-primary); font-size: 18px; 
+      font-weight: 900; display: flex; align-items: center; justify-content: center; 
+      cursor: pointer; padding: 0; user-select: none; transition: all 0.15s ease;
+    }
+    .btn-step:active { transform: scale(0.88); background: var(--accent-light); }
+    .btn-step.add { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+    .btn-step.add:active { background: var(--accent-hover); }
+    .count-num { font-weight: 900; font-size: 16px; min-width: 24px; text-align: center; color: var(--text-main); }
+    .count-num.active { color: var(--accent-primary); }
+
+    .btn-action { 
+      background: linear-gradient(135deg, #64B5F6 0%, #4A90E2 100%); 
+      color: white; padding: 11px 14px; border: none; border-radius: var(--radius-m); 
+      cursor: pointer; font-size: 14px; font-weight: bold; margin-bottom: 10px; 
+      display: block; width: 100%; box-sizing: border-box; box-shadow: var(--shadow-btn); 
+      transition: all 0.2s ease; 
+    }
+    .btn-action:active { transform: translateY(2px); box-shadow: none; }
+    
+    .btn-sub { 
+      background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); 
+      color: white; border: none; box-shadow: 0 3px 8px rgba(21, 101, 192, 0.3); margin-bottom: 8px; 
+    }
+
+    #submitBtn { 
+      width: 100%; background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); 
+      color: white; padding: 15px; border: none; border-radius: 18px; 
+      cursor: pointer; font-size: 18px; font-weight: 900; letter-spacing: 1px;
+      box-shadow: 0 6px 18px rgba(53, 122, 189, 0.3); transition: all 0.2s ease; margin-top: 10px; 
+    }
+    #submitBtn:active { transform: translateY(3px); box-shadow: 0 2px 6px rgba(53, 122, 189, 0.3); }
+
+    #output { margin-top: 18px; text-align: center; font-weight: bold; font-size: 15px; color: var(--accent-primary); line-height: 1.5; white-space: pre-wrap; }
+
+    .pattern-menu { border: 1.5px solid var(--border-color); border-radius: var(--radius-s); overflow: hidden; background: white; margin-bottom: 10px; }
+    .pattern-item { padding: 10px 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; color: var(--text-main); font-weight: bold;}
+    .pattern-item.selected { background-color: var(--accent-soft); }
+    .pattern-item:last-child { border-bottom: none; }
+    .pattern-info { display: flex; align-items: center; gap: 8px; cursor: pointer; flex-grow: 1; }
+    .pattern-icon { font-size: 20px; display: inline-block; width: 36px; text-align: center; }
+    .pattern-check { width: 20px; color: var(--accent-primary); font-weight: bold; font-size: 15px; display: inline-block; }
+    .tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .tag { background: var(--accent-light); color: var(--text-main); padding: 4px 10px; border-radius: 16px; font-size: 13px; display: inline-flex; align-items: center; font-weight: bold; border: 1px solid #90CAF9;}
+    .tag-close { margin-left: 6px; cursor: pointer; font-weight: bold; background: #546E7A; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+
+    /* モーダル */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(28, 40, 51, 0.6); backdrop-filter: blur(3px); z-index: 9999; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
+    .modal-content { 
+      background: var(--bg-color); width: 100%; max-width: 600px; max-height: 90vh; 
+      border-radius: var(--radius-lg); padding: 22px 18px; box-sizing: border-box; 
+      overflow-y: auto; border: 1px solid var(--border-color); position: relative; 
+      text-align: center; animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .close-modal { position: absolute; top: 15px; right: 18px; font-size: 26px; color: var(--accent-primary); cursor: pointer; font-weight: bold; }
+    
+    #mapModal { padding: 0; }
+    #mapModal .modal-content { width: 100vw; height: 100vh; max-width: none; max-height: none; border-radius: 0; padding: 0; border: none; display: flex; flex-direction: column; text-align: left; animation: none; }
+    
+    /* マップヘッダー */
+    .map-header { 
+      position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000; 
+      display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; 
+      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px);
+      padding: 8px 10px; border-radius: var(--radius-m); 
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12); border: 1px solid var(--border-color); 
+      gap: 6px; box-sizing: border-box;
+    }
+    .map-title-group { display: flex; align-items: center; gap: 6px; flex-shrink: 1; min-width: 0; }
+    .map-header h3 { margin: 0; font-size: 15px; color: var(--accent-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:flex; align-items:center; gap:6px; }
+    
+    .map-close-circle { width: 32px; height: 32px; min-width: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: white; color: var(--accent-primary); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: transform 0.2s; }
+    .map-close-circle:active { transform: scale(0.9); }
+    
+    .map-controls-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .btn-reload-icon { background: var(--accent-soft); color: var(--accent-primary); border: 1px solid #90CAF9; width: 32px; height: 32px; min-width: 32px; border-radius: 50%; font-weight: bold; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    .btn-reload-icon:active { transform: scale(0.9); }
+
+    /* サブヘッダー（件数＆フィルター丸型ボタン） */
+    .map-sub-header {
+      position: absolute; top: 62px; left: 10px; right: 10px; z-index: 1000;
+      display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
+    }
+    .map-count-badge {
+      background: rgba(255, 255, 255, 0.95); color: var(--accent-primary); font-size: 13px;
+      padding: 8px 16px; border-radius: 30px; font-weight: bold; pointer-events: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid var(--border-color);
+    }
+    .btn-filter-wrap {
+      pointer-events: auto; display: flex; align-items: center; gap: 6px;
+      background: var(--accent-soft); color: var(--accent-primary); border: 1.5px solid #90CAF9;
+      padding: 8px 16px; border-radius: 30px; font-weight: bold; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s ease;
+    }
+    .btn-filter-wrap:active { transform: scale(0.95); }
+
+    /* フィルターパネル */
+    #mapFilterPanel { 
+      display: none; position: absolute; top: 110px; left: 10px; right: 10px; 
+      background: white; padding: 15px; border-radius: var(--radius-m); 
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: 2px solid var(--accent-primary); 
+      z-index: 1001; animation: fadeIn 0.2s ease-out; max-height: calc(100vh - 130px); overflow-y: auto;
+    }
+    .filter-item { margin-bottom: 12px; }
+    .filter-item label { font-size: 13px; margin-bottom: 4px; color: var(--text-main); }
+    .btn-show-all { background: linear-gradient(135deg, #64B5F6 0%, #4A90E2 100%); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: var(--shadow-btn); transition: all 0.2s ease; }
+    .btn-show-all:active { transform: translateY(2px); box-shadow: none; }
+
+    /* 記録完了モーション（白背景・ぼかし無し・青ベース） */
+    .modal-success {
+      display: none;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.2); 
+      z-index: 10000; justify-content: center; align-items: center;
+    }
+    .modal-success.active { display: flex; }
+    .success-stage {
+      position: relative; width: 220px; height: 220px;
+      background: white; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    .success-ripple {
+      position: absolute; bottom: 70px; width: 50px; height: 16px;
+      background: rgba(74, 144, 226, 0.3); border-radius: 50%; transform: scale(0); opacity: 0;
+    }
+    .success-ripple.animate { animation: ripple-effect 0.6s cubic-bezier(0.25, 1, 0.5, 1) 0.25s forwards; }
+
+    .success-pin-wrapper { position: absolute; bottom: 75px; transform: translateY(-250px); opacity: 0; z-index: 2; }
+    .success-pin-wrapper.animate { animation: drop-bounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+    .success-burst-wrapper { position: absolute; bottom: 118px; left: 50%; transform: translateX(-50%); width: 0; height: 0; z-index: 3; pointer-events: none; }
+    .flash-ring { position: absolute; top: -24px; left: -24px; width: 48px; height: 48px; border: 3px solid #4A90E2; border-radius: 50%; box-sizing: border-box; opacity: 0; }
+    .arm { position: absolute; top: 0; left: 0; width: 0; height: 0; }
+    .arm:nth-child(2)  { transform: rotate(-100deg); }
+    .arm:nth-child(3)  { transform: rotate(-75deg); }
+    .arm:nth-child(4)  { transform: rotate(-50deg); }
+    .arm:nth-child(5)  { transform: rotate(-25deg); }
+    .arm:nth-child(6)  { transform: rotate(0deg); }
+    .arm:nth-child(7)  { transform: rotate(25deg); }
+    .arm:nth-child(8)  { transform: rotate(50deg); }
+    .arm:nth-child(9)  { transform: rotate(75deg); }
+    .arm:nth-child(10) { transform: rotate(100deg); }
+    .dot { position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; border-radius: 50%; background-color: #4A90E2; opacity: 0; }
+    .arm:nth-child(even) .dot { background-color: #64B5F6; width: 8px; height: 8px; left: -4px; }
+    .success-burst-wrapper.animate .flash-ring { animation: ring-pop 0.25s cubic-bezier(0.1, 0.8, 0.3, 1) 0.3s forwards; }
+    .success-burst-wrapper.animate .dot { animation: dot-pop 0.3s cubic-bezier(0.1, 0.8, 0.3, 1) 0.3s forwards; }
+
+    .success-status-text {
+      position: absolute; bottom: 30px; font-size: 20px; font-weight: bold; color: #4A90E2;
+      letter-spacing: 2px; opacity: 0; transform: translateY(10px); z-index: 1; text-shadow: 0 2px 8px rgba(255,255,255,0.9);
+    }
+    .success-status-text.animate { animation: text-appear 0.3s ease-out 0.4s forwards; }
+
+    @keyframes drop-bounce {
+      0% { transform: translateY(-220px) scale(0.8); opacity: 0; }
+      35% { opacity: 1; }
+      55% { transform: translateY(0) scaleY(0.7) scaleX(1.3); }
+      72% { transform: translateY(-16px) scaleY(1.15) scaleX(0.88); }
+      85% { transform: translateY(0) scaleY(0.95) scaleX(1.05); }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes ripple-effect { 0% { transform: scale(0.2); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
+    @keyframes ring-pop { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+    @keyframes dot-pop { 0% { transform: translateY(0) scale(0.3); opacity: 1; } 50% { opacity: 1; } 100% { transform: translateY(-55px) scale(1.1); opacity: 0; } }
+    @keyframes text-appear { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+
+    /* マップロード画面 */
+    .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 247, 251, 0.85); backdrop-filter: blur(4px); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; transition: opacity 0.3s ease, visibility 0.3s ease; }
+    .loading-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .spinner { width: 44px; height: 44px; border: 4px solid var(--accent-light); border-top: 4px solid var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    .loading-text { color: var(--accent-primary); font-weight: bold; font-size: 16px; letter-spacing: 1.5px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #aggregatedMap { flex-grow: 1; height: 100%; width: 100%; z-index: 1; }
+
+    .history-item { background: white; padding: 14px; border-radius: var(--radius-s); border: 1px solid var(--border-color); margin-bottom: 12px; text-align: left; box-shadow: 0 2px 6px rgba(0,0,0,0.03); position: relative; }
+    .btn-edit { background-color: var(--accent-primary); color: white; padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 3px 8px rgba(74, 144, 226, 0.3); margin-top: 8px; width: 100%; transition: all 0.2s ease; }
+    .btn-edit:active { transform: translateY(2px); box-shadow: none; }
+    
+    /* 履歴の削除ゴミ箱ボタン */
+    .btn-delete-history {
+      position: absolute; top: 10px; right: 10px; background: transparent; border: none; 
+      cursor: pointer; padding: 6px; border-radius: 50%; transition: transform 0.2s, background 0.2s; 
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-delete-history img { width: 22px; height: 22px; object-fit: contain; pointer-events: none; }
+    .btn-delete-history:active { transform: scale(0.85); background: #E3F2FD; }
+
+    .os-guide-container { margin-bottom: 18px; text-align: left; }
+    .os-toggle-btn { background: var(--accent-soft); color: var(--text-main); border: 1px solid #90CAF9; padding: 10px 12px; border-radius: var(--radius-s); width: 100%; font-weight: bold; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; margin-bottom: 6px; }
+    .os-guide-content { background: white; padding: 12px 14px; border-radius: var(--radius-s); border: 1px solid var(--border-color); font-size: 13px; line-height: 1.6; color: var(--text-main); margin-bottom: 10px; }
+    .os-guide-content ol { margin: 0; padding-left: 18px; }
+    .custom-neko-icon { width: auto !important; height: 38px !important; object-fit: contain; filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.3)); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes modalPop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+  </style>
+</head>
+<body>
+
+<!-- 初回起動用 ウェルカムモーダル -->
+<div id="welcomeModal" class="modal">
+  <div id="stepInstall" class="modal-content hidden" style="max-width: 400px;">
+    <h3 style="color:var(--accent-primary); font-size: 20px; margin-bottom:10px;">ホーム画面に追加</h3>
+    <p style="font-size:13px; color:var(--text-sub); line-height:1.5; margin-bottom:20px;">ショートカットを作成すると、ホーム画面からすぐに起動できます。</p>
+    
+    <div class="os-guide-container">
+      <button type="button" class="os-toggle-btn" onclick="toggleGuide('welcomeIos')"><span>📱 iPhone (Safari) の手順</span> <span id="welcomeIosArrow">▼</span></button>
+      <div id="welcomeIos" class="os-guide-content hidden">
+        <ol>
+          <li>Safari画面下部の<strong>「共有ボタン（四角から上矢印）」</strong>をタップ</li>
+          <li>メニューを下にスクロールして<strong>「ホーム画面に追加」</strong>をタップ</li>
+          <li>右上の<strong>「追加」</strong>をタップ</li>
+        </ol>
+      </div>
+      <button type="button" class="os-toggle-btn" onclick="toggleGuide('welcomeAndroid')"><span>🤖 Android (Chrome) の手順</span> <span id="welcomeAndroidArrow">▼</span></button>
+      <div id="welcomeAndroid" class="os-guide-content hidden">
+        <ol>
+          <li>Chrome画面右上の<strong>「︙（3つの点）」</strong>をタップ</li>
+          <li><strong>「ホーム画面に追加」</strong>（または「アプリをインストール」）をタップ</li>
+          <li>画面に従って<strong>「追加」</strong>をタップ</li>
+        </ol>
+      </div>
+    </div>
+    <button class="btn-action" style="width:100%; padding:14px; border-radius:16px; margin-top:5px;" onclick="nextWelcomeStep()">確認した / 次へすすむ</button>
+  </div>
+  
+  <div id="stepName" class="modal-content hidden" style="max-width: 400px;">
+    <h3 style="color:var(--accent-primary); font-size: 22px;">はじめまして！</h3>
+    <p style="line-height:1.6; margin-bottom:17px;">ねこログ（南大東）へようこそ。<br>まずはあなたの名前を教えてください。<br><span style="font-size:12px; color:var(--text-sub);">※データの仕分けに使用します。</span></p>
+    <input type="text" id="welcomeNameInput" placeholder="例: 猫 太郎" style="margin-bottom: 25px; text-align: center; font-size:18px;">
+    <button class="btn-action" style="padding:16px; font-size:18px;" onclick="finishWelcome()">はじめる！</button>
+  </div>
+</div>
+
+<!-- 設定モーダル -->
+<div id="settingsModal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <span class="close-modal" onclick="closeModal('settingsModal')">×</span>
+    <h3 style="color:var(--accent-primary); margin-top:0;">⚙️ 設定</h3>
+    <div style="text-align: left; margin-top:20px;">
+      <label>👤 名前</label>
+      <input type="text" id="settingsNameInput" style="margin-bottom: 20px;">
+      <button class="btn-action" onclick="saveSettingsName()">変更を保存する</button>
+    </div>
+    <div style="margin-top: 25px; text-align: left; border-top: 1px dashed var(--border-color); padding-top: 20px;">
+      <label>📱 ホーム画面への追加方法</label>
+      <div class="os-guide-container" style="margin-top:10px;">
+        <button type="button" class="os-toggle-btn" onclick="toggleGuide('settingsIos')"><span>📱 iPhone (Safari) の手順</span> <span id="settingsIosArrow">▼</span></button>
+        <div id="settingsIos" class="os-guide-content hidden">
+          <ol>
+            <li>Safari画面下部の<strong>「共有ボタン（四角から上矢印）」</strong>をタップ</li>
+            <li>メニューを下にスクロールして<strong>「ホーム画面に追加」</strong>をタップ</li>
+            <li>右上の<strong>「追加」</strong>をタップ</li>
+          </ol>
+        </div>
+        <button type="button" class="os-toggle-btn" onclick="toggleGuide('settingsAndroid')"><span>🤖 Android (Chrome) の手順</span> <span id="settingsAndroidArrow">▼</span></button>
+        <div id="settingsAndroid" class="os-guide-content hidden">
+          <ol>
+            <li>Chrome画面右上の<strong>「︙（3つの点）」</strong>をタップ</li>
+            <li><strong>「ホーム画面に追加」</strong>（または「アプリをインストール」）をタップ</li>
+            <li>画面に従って<strong>「追加」</strong>をタップ</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- みんなのねこマップ 初回案内用ポップアップモーダル -->
+<div id="mapGuideModal" class="modal" style="z-index: 10000;">
+  <div class="modal-content" style="max-width: 400px;">
+    <h3 style="color:var(--accent-primary); margin-top:0; font-size:20px;">🗺️ みんなのねこマップについて</h3>
+    <p style="font-size:14px; color:var(--text-main); line-height:1.7; margin: 20px 0; text-align:left;">
+      ねこログで収集したデータが全て地図上に表示されます。<br>
+      データはねこログを使用している全ての人のデータが反映されます。
+    </p>
+    <button class="btn-action" style="padding:14px; font-size:16px; margin-bottom:0;" onclick="closeMapGuide()">分かった！</button>
+  </div>
+</div>
+
+<!-- 記録完了モーション モーダル（白背景正方形） -->
+<div id="successModal" class="modal-success">
+  <div class="success-stage">
+    <div id="successRipple" class="success-ripple"></div>
+    <div id="successPin" class="success-pin-wrapper">
+      <svg width="64" height="80" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 80C32 80 58 48 58 32C58 17.6421 46.3579 6 32 6C17.6421 6 6 17.6421 6 32C6 48 32 80 32 80Z" fill="#4A90E2"/>
+        <ellipse cx="32" cy="37" rx="10.5" ry="8.5" fill="white" />
+        <circle cx="18.5" cy="23.5" r="3.8" fill="white" />
+        <circle cx="27" cy="17" r="3.8" fill="white" />
+        <circle cx="37" cy="17" r="3.8" fill="white" />
+        <circle cx="45.5" cy="23.5" r="3.8" fill="white" />
+      </svg>
+    </div>
+    <div id="successBurst" class="success-burst-wrapper">
+      <div class="flash-ring"></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+      <div class="arm"><div class="dot"></div></div>
+    </div>
+    <div id="successText" class="success-status-text">記録完了</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="header-container">
+    <div class="title-group">
+      <img src="icon-neko.png" alt="ネコアイコン" class="title-icon">
+      <h2>ねこログ 南大東</h2>
+      <span class="title-sub-text">ネコ目撃情報<br>記録webアプリ</span>
+    </div>
+    <!-- 右側に送信履歴ボタンと設定ボタンを丸で配置 -->
+    <div class="header-buttons">
+      <button type="button" class="btn-circle-icon" onclick="openHistoryModal()" title="送信履歴">📝</button>
+      <button type="button" class="btn-circle-icon" onclick="openSettingsModal()" title="設定">⚙️</button>
+    </div>
+  </div>
+  
+  <div class="map-nav-container">
+    <button type="button" class="btn-map-wide" onclick="openMapModal()">
+      <span>🗺️</span> <span>みんなのねこマップを開く</span>
+    </button>
+  </div>
+
+  <form id="catForm" onsubmit="handleFormSubmit(event)">
+    <input type="hidden" id="editId" name="editId" value="">
+    <input type="hidden" id="location" required>
+
+    <div class="form-group">
+      <label class="required">📍 目撃場所</label>
+      <button type="button" id="currentLocationBtn" class="btn-action btn-sub" onclick="goToCurrentLocation()">現在地を取得する</button>
+      <div id="map"></div>
+      <p id="locationDisplay" style="color: var(--accent-primary); font-size: 0.9em; margin-top: 8px; font-weight:bold;">場所が選択されていません</p>
+    </div>
+
+    <div class="form-group">
+      <label class="required">🕒 目撃日時</label>
+      <button type="button" id="setNowBtn" class="btn-action btn-sub" onclick="setNowDatetime()">現在日時をセット</button>
+      <div style="display: flex; gap: 8px;">
+        <input type="date" id="dateInput" style="flex: 2;" required>
+        <select id="hourInput" style="flex: 1;" required>
+          <option value="">時頃</option>
+          <option value="00">0時頃</option><option value="01">1時頃</option><option value="02">2時頃</option>
+          <option value="03">3時頃</option><option value="04">4時頃</option><option value="05">5時頃</option>
+          <option value="06">6時頃</option><option value="07">7時頃</option><option value="08">8時頃</option>
+          <option value="09">9時頃</option><option value="10">10時頃</option><option value="11">11時頃</option>
+          <option value="12">12時頃</option><option value="13">13時頃</option><option value="14">14時頃</option>
+          <option value="15">15時頃</option><option value="16">16時頃</option><option value="17">17時頃</option>
+          <option value="18">18時頃</option><option value="19">19時頃</option><option value="20">20時頃</option>
+          <option value="21">21時頃</option><option value="22">22時頃</option><option value="23">23時頃</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="catCount" class="required">🐈 ネコの頭数</label>
+      <select id="catCount" onchange="toggleCatDetail()" required>
+        <option value="">選択してください</option>
+        <option value="1頭">1頭</option><option value="2頭">2頭</option><option value="3頭以上">3頭以上</option><option value="親子">親子</option><option value="子ネコ">子ネコ</option>
+      </select>
+      <div id="catCountNumGroup" class="hidden" style="margin-top: 12px;">
+        <label for="catCountNum" class="required">具体的な頭数</label>
+        <select id="catCountNum" onchange="updateTotalCatCount()"><option value="">選択してください</option></select>
+      </div>
+      <div id="catDetailGroup" class="hidden" style="margin-top: 12px;">
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1;"><label for="catCountParent" class="required" style="font-size: 13px;">親の頭数</label><select id="catCountParent" onchange="updateTotalCatCount()"><option value="">親</option></select></div>
+          <div style="flex: 1;"><label for="catCountChild" class="required" style="font-size: 13px;">子の頭数</label><select id="catCountChild" onchange="updateTotalCatCount()"><option value="">子</option></select></div>
+        </div>
+      </div>
+      <div id="catChildOnlyGroup" class="hidden" style="margin-top: 12px;">
+        <label for="catCountChildOnly" class="required" style="font-size: 13px;">子ネコの頭数</label>
+        <select id="catCountChildOnly" onchange="updateTotalCatCount()"><option value="">選択してください</option></select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="required">✂️ 耳カットされている個体か（頭数内訳）</label>
+      <div class="count-list">
+        <div class="count-row" id="rowEarCut_はい" onclick="changeEarCutCount('はい', 1)">
+          <span class="count-label"><span class="pattern-check" id="checkEarCut_はい"></span>はい</span>
+          <div class="stepper-control" onclick="event.stopPropagation()">
+            <button type="button" class="btn-step" onclick="changeEarCutCount('はい', -1)">ー</button>
+            <span id="earCutCount_はい" class="count-num">0</span>
+            <button type="button" class="btn-step add" onclick="changeEarCutCount('はい', 1)">＋</button>
+          </div>
+        </div>
+        <div class="count-row" id="rowEarCut_いいえ" onclick="changeEarCutCount('いいえ', 1)">
+          <span class="count-label"><span class="pattern-check" id="checkEarCut_いいえ"></span>いいえ</span>
+          <div class="stepper-control" onclick="event.stopPropagation()">
+            <button type="button" class="btn-step" onclick="changeEarCutCount('いいえ', -1)">ー</button>
+            <span id="earCutCount_いいえ" class="count-num">0</span>
+            <button type="button" class="btn-step add" onclick="changeEarCutCount('いいえ', 1)">＋</button>
+          </div>
+        </div>
+        <div class="count-row" id="rowEarCut_不明" onclick="changeEarCutCount('不明', 1)">
+          <span class="count-label"><span class="pattern-check" id="checkEarCut_不明"></span>不明</span>
+          <div class="stepper-control" onclick="event.stopPropagation()">
+            <button type="button" class="btn-step" onclick="changeEarCutCount('不明', -1)">ー</button>
+            <span id="earCutCount_不明" class="count-num">0</span>
+            <button type="button" class="btn-step add" onclick="changeEarCutCount('不明', 1)">＋</button>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="hiddenEarCut" name="earCut">
+    </div>
+
+    <div class="form-group">
+      <label>🎨 ネコの柄（複数選択・カウント可）</label>
+      <div id="selectedPatternTags" class="tag-container"></div>
+      <div id="patternMenu" class="pattern-menu"></div>
+      <div id="otherPatternContainer" class="hidden">
+        <input type="text" id="patternOtherInput" placeholder="その他の柄を具体的に入力" oninput="updatePatternValue()">
+      </div>
+      <input type="hidden" id="hiddenCatPattern" name="catPattern">
+    </div>
+
+    <div class="form-group">
+      <label for="photo">📸 目撃写真（複数選択可）</label>
+      <input type="file" id="photo" accept="image/*" multiple>
+    </div>
+
+    <div class="form-group">
+      <label for="remarks">💬 備考</label>
+      <textarea id="remarks" rows="3" placeholder="その他、気づいたことなどがあればご記入ください"></textarea>
+    </div>
+
+    <button type="submit" id="submitBtn">記録する</button>
+  </form>
+  <div id="output"></div>
+</div>
+
+<!-- みんなのねこマップ モーダル -->
+<div id="mapModal" class="modal">
+  <div class="modal-content" style="position:relative; overflow:hidden;">
+    <div id="mapLoadingOverlay" class="loading-overlay hidden">
+      <div class="spinner"></div><div class="loading-text">Loading...</div>
+    </div>
+
+    <div class="map-header">
+      <div class="map-title-group"><h3>🗺️ みんなのねこマップ</h3></div>
+      <div class="map-controls-group">
+        <button type="button" class="btn-reload-icon" onclick="loadMapMarkers()" title="更新">🔄</button>
+        <button type="button" class="map-close-circle" onclick="closeModal('mapModal')">×</button>
+      </div>
+    </div>
+    
+    <div class="map-sub-header">
+      <div id="mapCountBadge" class="map-count-badge">0件</div>
+      <button type="button" class="btn-filter-wrap" onclick="toggleFilterPanel()"><span style="font-size:16px;">🔍</span><span style="font-size:13px;">フィルター</span></button>
+    </div>
+    
+    <div id="mapFilterPanel">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:14px;">
+        <h4 style="margin:0; color:var(--accent-primary); font-size:16px;">詳細フィルター</h4>
+        <button type="button" class="btn-show-all" onclick="resetAndApplyFilters()">全て表示</button>
+      </div>
+      <div class="filter-item"><label>📅 いつ以降のデータ？</label><input type="date" id="filterDate" style="width:100%;"></div>
+      <div class="filter-item">
+        <label>🐈 頭数</label>
+        <select id="filterCount" style="width:100%;">
+          <option value="">すべて</option><option value="1頭">1頭</option><option value="2頭">2頭</option><option value="3頭以上">3頭以上</option><option value="親子">親子</option><option value="子ネコ">子ネコ</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>✂️ 耳カット</label>
+        <select id="filterEarCut" style="width:100%;">
+          <option value="">すべて</option><option value="はい">あり</option><option value="いいえ">なし</option><option value="不明">不明</option>
+        </select>
+      </div>
+      <div class="filter-item"><label>👤 報告者名</label><select id="filterName" style="width:100%;"><option value="">すべて</option></select></div>
+      <div style="display:flex; gap:10px; margin-top:20px;"><button type="button" class="btn-action" style="margin-bottom:0;" onclick="applyFilters()">適用する</button></div>
+    </div>
+    <div id="aggregatedMap"></div>
+  </div>
+</div>
+
+<!-- 送信履歴 モーダル -->
+<div id="historyModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeModal('historyModal')">×</span>
+    <h3 style="color:var(--accent-primary); margin-top:0;">📝 送信履歴（直近3日）</h3>
+    <div id="historyList">
+      <p style="color:var(--text-sub);">履歴を読み込んでいます...</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // ==========================================
+  // 【重要】新しい南大東用のGAS URLに書き換えてください
+  // ==========================================
+  const gasURL = "https://script.google.com/macros/s/新しいURLに変更してください/exec";
+
+  function createDynamicNekoIcon() {
+    return L.icon({ iconUrl: 'icon-neko.png', className: 'custom-neko-icon', iconAnchor: [19, 38], popupAnchor: [0, -38] });
+  }
+  const nekoIcon = createDynamicNekoIcon();
+
+  const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); }); }
+  
+  window.addEventListener('DOMContentLoaded', () => {
+    initCatCountOptions();
+    const savedName = localStorage.getItem('nekoLogName_MD');
+    if (!savedName) {
+      document.getElementById('welcomeModal').style.display = 'flex';
+      if (!isStandalone) { document.getElementById('stepInstall').classList.remove('hidden'); if (isIos) { toggleGuide('welcomeIos'); } else { toggleGuide('welcomeAndroid'); } } 
+      else { document.getElementById('stepName').classList.remove('hidden'); }
+    }
+  });
+
+  function initCatCountOptions() {
+    const numSelect = document.getElementById('catCountNum'); numSelect.innerHTML = '<option value="">選択してください</option>';
+    for (let i = 3; i <= 30; i++) numSelect.innerHTML += `<option value="${i}頭">${i}頭</option>`;
+    const parentSelect = document.getElementById('catCountParent'); parentSelect.innerHTML = '<option value="">親</option>';
+    for (let i = 1; i <= 10; i++) parentSelect.innerHTML += `<option value="${i}頭">親 ${i}頭</option>`;
+    const childSelect = document.getElementById('catCountChild'); childSelect.innerHTML = '<option value="">子</option>';
+    for (let i = 0; i <= 20; i++) childSelect.innerHTML += `<option value="${i}頭">子 ${i}頭</option>`;
+    const childOnlySelect = document.getElementById('catCountChildOnly'); childOnlySelect.innerHTML = '<option value="">選択してください</option>';
+    for (let i = 1; i <= 20; i++) childOnlySelect.innerHTML += `<option value="${i}頭">${i}頭</option>`;
+  }
+
+  let currentActiveModal = null;
+  function openModalWithHistory(modalId) {
+    document.getElementById(modalId).style.display = 'flex'; currentActiveModal = modalId;
+    history.pushState({ modalOpen: true, modalId: modalId }, "");
+  }
+  window.addEventListener('popstate', (e) => {
+    if (currentActiveModal) { document.getElementById(currentActiveModal).style.display = 'none'; currentActiveModal = null; }
+  });
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    if (currentActiveModal === modalId) { currentActiveModal = null; if (history.state && history.state.modalOpen) history.back(); }
+  }
+
+  function openSettingsModal() { document.getElementById('settingsNameInput').value = localStorage.getItem('nekoLogName_MD') || ''; openModalWithHistory('settingsModal'); }
+  function saveSettingsName() {
+    const name = document.getElementById('settingsNameInput').value.trim();
+    if (!name) { alert('名前を入力してください。'); return; }
+    localStorage.setItem('nekoLogName_MD', name); closeModal('settingsModal');
+  }
+
+  function toggleGuide(guideId) {
+    const content = document.getElementById(guideId); const arrow = document.getElementById(guideId + 'Arrow');
+    if (content.classList.contains('hidden')) { content.classList.remove('hidden'); if (arrow) arrow.innerText = '▲'; } 
+    else { content.classList.add('hidden'); if (arrow) arrow.innerText = '▼'; }
+  }
+  function nextWelcomeStep() { document.getElementById('stepInstall').classList.add('hidden'); document.getElementById('stepName').classList.remove('hidden'); }
+  function finishWelcome() {
+    const name = document.getElementById('welcomeNameInput').value.trim();
+    if (!name) { alert('名前を入力してください。'); return; }
+    localStorage.setItem('nekoLogName_MD', name); document.getElementById('welcomeModal').style.display = 'none';
+  }
+
+  var aggMap = null; var markersLayer = null;
+
+  async function openMapModal() {
+    openModalWithHistory('mapModal');
+    const loader = document.getElementById('mapLoadingOverlay'); if (loader) loader.classList.remove('hidden');
+    if (!aggMap) {
+      aggMap = L.map('aggregatedMap', { zoomControl: false }).setView([25.950, 131.310], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(aggMap);
+      L.control.zoom({ position: 'bottomright' }).addTo(aggMap); markersLayer = L.layerGroup().addTo(aggMap);
+    }
+    setTimeout(() => { aggMap.invalidateSize(); }, 200);
+    document.getElementById('filterDate').value = ""; document.getElementById('filterCount').value = "";
+    document.getElementById('filterEarCut').value = ""; document.getElementById('filterName').value = "";
+    loadMapMarkers();
+    const mapGuideSeen = localStorage.getItem('nekoLogMapGuideSeen_MD');
+    if (!mapGuideSeen) document.getElementById('mapGuideModal').style.display = 'flex';
+  }
+  function closeMapGuide() { document.getElementById('mapGuideModal').style.display = 'none'; localStorage.setItem('nekoLogMapGuideSeen_MD', 'true'); }
+  function toggleFilterPanel() { const panel = document.getElementById('mapFilterPanel'); panel.style.display = panel.style.display === 'block' ? 'none' : 'block'; }
+  function resetAndApplyFilters() { document.getElementById('filterDate').value = ""; document.getElementById('filterCount').value = ""; document.getElementById('filterEarCut').value = ""; document.getElementById('filterName').value = ""; applyFilters(); }
+  function applyFilters() { document.getElementById('mapFilterPanel').style.display = 'none'; loadMapMarkers(); }
+  function formatEarCutText(earCutStr) { if (!earCutStr) return '不明'; return earCutStr.replace(/はい/g, 'あり').replace(/いいえ/g, 'なし').replace(/わからない/g, '不明'); }
+
+  async function loadMapMarkers() {
+    if(!markersLayer) return;
+    const loader = document.getElementById('mapLoadingOverlay'); if (loader) loader.classList.remove('hidden');
+    try {
+      markersLayer.clearLayers();
+      const response = await fetch(gasURL); const data = await response.json();
+      
+      window.serverInternalIds = data.map(item => item.internalId).filter(Boolean);
+
+      const fDate = document.getElementById('filterDate').value; const fCount = document.getElementById('filterCount').value;
+      const fEarCut = document.getElementById('filterEarCut').value; const filterNameSelect = document.getElementById('filterName'); const fName = filterNameSelect.value;
+      const namesSet = new Set(); data.forEach(item => { if (item.nickname) namesSet.add(item.nickname); });
+      const namesList = Array.from(namesSet).sort(); filterNameSelect.innerHTML = '<option value="">すべて</option>';
+      namesList.forEach(name => { const opt = document.createElement('option'); opt.value = name; opt.innerText = name; if (name === fName) opt.selected = true; filterNameSelect.appendChild(opt); });
+
+      let cutoffDate = fDate ? new Date(fDate) : null; let displayCount = 0;
+      data.forEach(item => {
+        if (!item.location || !item.datetime) return; const itemDate = new Date(item.datetime);
+        if (cutoffDate && itemDate < cutoffDate) return;
+        if (fCount) {
+          if (fCount === '3頭以上' && !item.catCount.match(/^\d+頭/)) return;
+          if (fCount === '親子' && !item.catCount.includes('親') && !item.catCount.includes('子') && !item.catCount.includes('親子')) return;
+          if (fCount === '子ネコ' && !item.catCount.includes('子ネコ')) return;
+          if ((fCount === '1頭' || fCount === '2頭') && item.catCount !== fCount) return;
+        }
+        if (fEarCut && item.earCut) {
+          if (fEarCut === '不明' && (item.earCut.includes('不明') || item.earCut.includes('わからない'))) { /* pass */ } else if (!item.earCut.includes(fEarCut)) return;
+        } else if (fEarCut && !item.earCut) { if (fEarCut !== '不明') return; }
+        if (fName && item.nickname !== fName) return;
+
+        displayCount++;
+        const [lat, lng] = item.location.split(',').map(Number);
+        const dateStr = itemDate.toLocaleString('ja-JP', {month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+        let popupHtml = `<div style="font-size:14px; color:var(--text-main); line-height:1.6;">`;
+        popupHtml += `<strong style="color:var(--accent-primary);">🕒 ${dateStr}</strong><br>🐈 頭数: ${item.catCount}<br>✂️ 耳カット: ${formatEarCutText(item.earCut)}<br>🎨 柄: ${item.pattern}<br>👤 報告者: ${item.nickname}`;
+        if (item.photoUrl) popupHtml += `<br><a href="${item.photoUrl}" target="_blank" style="color:#0288D1; text-decoration:none;">📸 写真を見る</a>`;
+        popupHtml += `</div>`;
+        L.marker([lat, lng], { icon: nekoIcon }).addTo(markersLayer).bindPopup(popupHtml);
+      });
+      document.getElementById('mapCountBadge').innerText = `${displayCount}件`;
+    } catch (e) { console.error(e); } finally { if (loader) loader.classList.add('hidden'); }
+  }
+
+  function openHistoryModal() { openModalWithHistory('historyModal'); loadHistoryList(); }
+  var map = L.map('map').setView([25.950, 131.310], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); var marker;
+  map.on('click', function(e) { updateMarkerAndLocation(e.latlng); });
+  function setNowDatetime() { const now = new Date(); const roundedTime = new Date(now.getTime() + 29 * 60 * 1000); document.getElementById('dateInput').value = roundedTime.getFullYear() + '-' + String(roundedTime.getMonth()+1).padStart(2, '0') + '-' + String(roundedTime.getDate()).padStart(2, '0'); document.getElementById('hourInput').value = String(roundedTime.getHours()).padStart(2, '0'); }
+  function goToCurrentLocation() {
+    if (!navigator.geolocation) { alert("位置情報に対応していません。"); return; }
+    var locBtn = document.getElementById('currentLocationBtn'); locBtn.disabled = true; locBtn.innerText = "取得中...";
+    navigator.geolocation.getCurrentPosition(
+      function(position) { var latlng = L.latLng(position.coords.latitude, position.coords.longitude); map.setView(latlng, 16); updateMarkerAndLocation(latlng); locBtn.disabled = false; locBtn.innerText = "現在地を取得する"; },
+      function() { alert("位置情報の取得に失敗しました。"); locBtn.disabled = false; locBtn.innerText = "現在地を取得する"; }, { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+  function updateMarkerAndLocation(latlng) {
+    var lat = latlng.lat.toFixed(6); var lng = latlng.lng.toFixed(6);
+    if (marker) { marker.setLatLng(latlng); } else { marker = L.marker(latlng, { icon: nekoIcon }).addTo(map); }
+    document.getElementById('location').value = lat + ", " + lng; document.getElementById('locationDisplay').innerText = "緯度 " + lat + " / 経度 " + lng;
+  }
+  function toggleCatDetail() {
+    var val = document.getElementById('catCount').value; 
+    document.getElementById('catCountNumGroup').classList.toggle('hidden', val !== '3頭以上');
+    document.getElementById('catDetailGroup').classList.toggle('hidden', val !== '親子'); 
+    document.getElementById('catChildOnlyGroup').classList.toggle('hidden', val !== '子ネコ');
+    updateTotalCatCount();
+  }
+  function getSelectedTotalCatCount() {
+    const mainVal = document.getElementById('catCount').value; if (!mainVal) return 0;
+    if (mainVal === '1頭') return 1; if (mainVal === '2頭') return 2;
+    if (mainVal === '3頭以上') { const numVal = document.getElementById('catCountNum').value; return numVal ? parseInt(numVal.replace('頭', ''), 10) : 0; }
+    if (mainVal === '親子') { const pVal = document.getElementById('catCountParent').value; const cVal = document.getElementById('catCountChild').value; const pNum = pVal ? parseInt(pVal.replace('頭', '').replace('親', '').trim(), 10) : 0; const cNum = cVal ? parseInt(cVal.replace('頭', '').replace('子', '').trim(), 10) : 0; return pNum + cNum; }
+    if (mainVal === '子ネコ') { const cOnlyVal = document.getElementById('catCountChildOnly').value; return cOnlyVal ? parseInt(cOnlyVal.replace('頭', ''), 10) : 0; }
+    return 0;
+  }
+  function updateTotalCatCount() { }
+  function getEarCutTotalCount() { return (earCutCounts["はい"] || 0) + (earCutCounts["いいえ"] || 0) + (earCutCounts["不明"] || 0); }
+  function getPatternTotalCount() { let total = 0; patternCounts.forEach((count) => { total += count; }); return total; }
+
+  const earCutCounts = { "はい": 0, "いいえ": 0, "不明": 0 };
+  function changeEarCutCount(type, delta) {
+    const maxAllowed = getSelectedTotalCatCount();
+    if (delta > 0 && maxAllowed > 0 && getEarCutTotalCount() >= maxAllowed) return;
+    earCutCounts[type] = Math.max(0, (earCutCounts[type] || 0) + delta); updateEarCutUI(); updateEarCutValue();
+  }
+  function updateEarCutUI() {
+    ["はい", "いいえ", "不明"].forEach(key => {
+      const numEl = document.getElementById('earCutCount_' + key); const rowEl = document.getElementById('rowEarCut_' + key); const checkEl = document.getElementById('checkEarCut_' + key);
+      if (numEl) { numEl.innerText = earCutCounts[key]; numEl.classList.toggle('active', earCutCounts[key] > 0); }
+      if (rowEl) rowEl.classList.toggle('selected', earCutCounts[key] > 0);
+      if (checkEl) checkEl.innerText = earCutCounts[key] > 0 ? '✓' : '';
+    });
+  }
+  function updateEarCutValue() {
+    let result = []; for (const key in earCutCounts) { if (earCutCounts[key] > 0) result.push(`${key} (${earCutCounts[key]}頭)`); }
+    document.getElementById('hiddenEarCut').value = result.join(', ');
+  }
+
+  const patternCategories = {
+    "トラ柄系": [ { id: "キジトラ", icon: "<img src='kijitora.png' style='height:44px; vertical-align:middle;'>" }, { id: "キジ白", icon: "<img src='kijisiro.png' style='height:44px; vertical-align:middle;'>" }, { id: "サバトラ", icon: "<img src='sabatora.png' style='height:44px; vertical-align:middle;'>" }, { id: "サバ白", icon: "<img src='sabasiro.png' style='height:44px; vertical-align:middle;'>" }, { id: "茶トラ", icon: "<img src='tyatora.png' style='height:44px; vertical-align:middle;'>" }, { id: "茶トラ白", icon: "<img src='tyasiro.png' style='height:44px; vertical-align:middle;'>" } ],
+    "単色": [ { id: "黒", icon: "<img src='kuro.png' style='height:44px; vertical-align:middle;'>" }, { id: "白", icon: "<img src='siro.png' style='height:44px; vertical-align:middle;'>" }, { id: "グレー", icon: "<img src='gray.png' style='height:44px; vertical-align:middle;'>" } ],
+    "複色": [ { id: "黒白", icon: "<img src='kurosiro.png' style='height:44px; vertical-align:middle;'>" }, { id: "シャム系", icon: "<img src='syamu.png' style='height:44px; vertical-align:middle;'>" }, { id: "グレー白", icon: "<img src='graysiro.png' style='height:44px; vertical-align:middle;'>" }, { id: "サビ", icon: "<img src='sabi.png' style='height:44px; vertical-align:middle;'>" }, { id: "三毛", icon: "<img src='mike.png' style='height:44px; vertical-align:middle;'>" } ]
+  };
+  const standalonePatterns = [ { id: "不明", icon: "", isCountable: true }, { id: "その他（記述）", icon: "", isCountable: false } ];
+  let patternCounts = new Map(); let selectedStandalonePatterns = new Set(); let currentPatternCategory = null;
+
+  function changePatternCount(id, delta, event) {
+    if (event) event.stopPropagation();
+    if (id === 'その他（記述）') {
+      if (selectedStandalonePatterns.has(id)) selectedStandalonePatterns.delete(id); else selectedStandalonePatterns.add(id);
+      document.getElementById('otherPatternContainer').classList.toggle('hidden', !selectedStandalonePatterns.has('その他（記述）'));
+    } else {
+      const maxAllowed = getSelectedTotalCatCount();
+      if (delta > 0 && maxAllowed > 0 && getPatternTotalCount() >= maxAllowed) return;
+      let current = patternCounts.get(id) || 0; let updated = Math.max(0, current + delta);
+      if (updated === 0) patternCounts.delete(id); else patternCounts.set(id, updated);
+    }
+    renderPatternMenu();
+  }
+  function renderPatternMenu() {
+    const menu = document.getElementById('patternMenu'); menu.innerHTML = '';
+    if (currentPatternCategory) {
+      const backBtn = document.createElement('div'); backBtn.className = 'pattern-item'; backBtn.style.backgroundColor = 'var(--accent-soft)'; 
+      backBtn.innerHTML = '<strong>◀ 戻る</strong>'; backBtn.onclick = () => { currentPatternCategory = null; renderPatternMenu(); }; menu.appendChild(backBtn);
+      patternCategories[currentPatternCategory].forEach(item => { menu.appendChild(createPatternItem(item.id, item.icon, true)); });
+    } else {
+      Object.keys(patternCategories).forEach(cat => {
+        const div = document.createElement('div'); div.className = 'pattern-item'; 
+        div.innerHTML = `<span class="pattern-info"><span class="pattern-check"></span><span>${cat}</span></span><span style="color:var(--text-sub);">▶</span>`; 
+        div.onclick = () => { currentPatternCategory = cat; renderPatternMenu(); }; menu.appendChild(div);
+      });
+      standalonePatterns.forEach(item => { menu.appendChild(createPatternItem(item.id, item.icon, item.isCountable)); });
+    }
+    updatePatternTags();
+  }
+  function createPatternItem(id, icon, isCountable) {
+    const div = document.createElement('div'); 
+    if (isCountable) {
+      const count = patternCounts.get(id) || 0; const isSelected = count > 0;
+      div.className = 'pattern-item' + (isSelected ? ' selected' : ''); const iconHtml = icon ? `<span class="pattern-icon">${icon}</span>` : '';
+      div.innerHTML = `
+        <div class="pattern-info" onclick="changePatternCount('${id}', 1)">
+          <span class="pattern-check">${isSelected ? '✓' : ''}</span>${iconHtml}<span>${id}</span>
+        </div>
+        <div class="stepper-control">
+          <button type="button" class="btn-step" onclick="changePatternCount('${id}', -1, event)">ー</button>
+          <span class="count-num ${isSelected ? 'active' : ''}">${count}</span>
+          <button type="button" class="btn-step add" onclick="changePatternCount('${id}', 1, event)">＋</button>
+        </div>`;
+    } else {
+      const isSelected = selectedStandalonePatterns.has(id); div.className = 'pattern-item' + (isSelected ? ' selected' : ''); 
+      div.onclick = () => changePatternCount(id, 0);
+      div.innerHTML = `<div class="pattern-info"><span class="pattern-check">${isSelected ? '✓' : ''}</span><span>${id}</span></div>`;
+    }
+    return div;
+  }
+  function updatePatternTags() {
+    const container = document.getElementById('selectedPatternTags'); container.innerHTML = '';
+    patternCounts.forEach((count, id) => { const tag = document.createElement('span'); tag.className = 'tag'; tag.innerHTML = `${id} (${count}頭) <span class="tag-close" onclick="removePatternTag('${id}')">×</span>`; container.appendChild(tag); });
+    selectedStandalonePatterns.forEach(id => { const tag = document.createElement('span'); tag.className = 'tag'; tag.innerHTML = `${id} <span class="tag-close" onclick="removePatternTag('${id}')">×</span>`; container.appendChild(tag); });
+    updatePatternValue();
+  }
+  function removePatternTag(id) { patternCounts.delete(id); selectedStandalonePatterns.delete(id); if (id === 'その他（記述）') document.getElementById('otherPatternContainer').classList.add('hidden'); renderPatternMenu(); }
+  function updatePatternValue() {
+    let vals = [];
+    patternCounts.forEach((count, id) => { vals.push(`${id} (${count}頭)`); });
+    selectedStandalonePatterns.forEach(id => {
+      if (id === 'その他（記述）') { const otherVal = document.getElementById('patternOtherInput').value.trim(); vals.push(otherVal ? `その他(${otherVal})` : 'その他'); } 
+      else vals.push(id);
+    });
+    document.getElementById('hiddenCatPattern').value = vals.join(', ');
+  }
+
+  renderPatternMenu();
+
+  const dbName = "CatReportDB_MD"; const storeName = "offlineReports_MD"; const historyStoreName = "myHistory_MD"; 
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, 2); 
+      request.onupgradeneeded = (e) => { 
+        const db = e.target.result; 
+        if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName, { autoIncrement: true }); 
+        if (!db.objectStoreNames.contains(historyStoreName)) db.createObjectStore(historyStoreName, { keyPath: "id" }); 
+      };
+      request.onsuccess = (e) => resolve(e.target.result); request.onerror = (e) => reject(e.target.error);
+    });
+  }
+  
+  async function saveToOfflineDB(data) { const db = await openDB(); const tx = db.transaction(storeName, "readwrite"); tx.objectStore(storeName).add(data); return tx.complete; }
+  async function getFromOfflineDB() { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(storeName, "readonly"); const req = tx.objectStore(storeName).getAllKeys(); const valReq = tx.objectStore(storeName).getAll(); tx.oncomplete = () => resolve(req.result.map((key, i) => ({ key: key, data: valReq.result[i] }))); }); }
+  async function deleteFromOfflineDB(key) { const db = await openDB(); const tx = db.transaction(storeName, "readwrite"); tx.objectStore(storeName).delete(key); }
+  async function saveToHistoryDB(data) {
+    const db = await openDB(); const tx = db.transaction(historyStoreName, "readwrite");
+    tx.objectStore(historyStoreName).put({ id: data.editId, timestamp: new Date().getTime(), data: data });
+  }
+  async function deleteFromHistoryDB(id) {
+    const db = await openDB(); const tx = db.transaction(historyStoreName, "readwrite");
+    tx.objectStore(historyStoreName).delete(id); return tx.complete;
+  }
+  
+  async function loadHistoryList() {
+    const listDiv = document.getElementById('historyList');
+    try {
+      const db = await openDB();
+      const tx = db.transaction(historyStoreName, "readonly");
+      const request = tx.objectStore(historyStoreName).getAll();
+      request.onsuccess = async () => {
+        let results = request.result;
+
+        if (window.serverInternalIds && window.serverInternalIds.length > 0) {
+          const validResults = [];
+          for (const item of results) {
+            if (window.serverInternalIds.includes(item.id)) {
+              validResults.push(item);
+            } else {
+              await deleteFromHistoryDB(item.id);
+            }
+          }
+          results = validResults;
+        }
+
+        const threeDaysAgo = new Date().getTime() - (3 * 24 * 60 * 60 * 1000);
+        const recent = results.filter(item => item.timestamp > threeDaysAgo).sort((a,b) => b.timestamp - a.timestamp);
+        if(recent.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:var(--text-sub);">直近3日の送信履歴はありません。</p>'; return; }
+        
+        listDiv.innerHTML = '';
+        recent.forEach(item => {
+          const d = item.data; const date = new Date(item.timestamp);
+          const formattedDate = `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,'0')}`;
+          listDiv.innerHTML += `
+            <div class="history-item">
+              <button type="button" class="btn-delete-history" onclick="deleteHistoryItem('${item.id}')" title="削除">
+                <img src="icon-trash.png" alt="削除">
+              </button>
+              <div style="font-weight:bold; color:var(--accent-primary); padding-right: 30px;">送信日時: ${formattedDate}</div>
+              <div style="font-size:14px; margin-top:5px; color:var(--text-main);">場所: ${d.location}<br>頭数: ${d.catCountResult}<br>耳カット: ${formatEarCutText(d.earCut)}<br>柄: ${d.catPattern}</div>
+              <button class="btn-edit" onclick="editHistory('${item.id}')">✏️ 修正して再送信する</button>
+            </div>`;
+        });
+      };
+    } catch(e) { listDiv.innerHTML = '<p>エラーが発生しました。</p>'; }
+  }
+
+  async function deleteHistoryItem(id) {
+    if (!confirm("この記録を削除しますか？\n（サーバー上からも完全に削除されます）")) return;
+    try {
+      const params = new URLSearchParams();
+      params.append('action', 'delete');
+      params.append('editId', id);
+      
+      fetch(gasURL, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
+        body: params,
+        mode: "no-cors"
+      });
+      
+      await deleteFromHistoryDB(id);
+      loadHistoryList();
+      loadMapMarkers();
+      
+    } catch(e) {
+      console.error(e);
+      alert("削除中にエラーが発生しました。");
+    }
+  }
+
+  async function editHistory(id) {
+    try {
+      const db = await openDB();
+      const tx = db.transaction(historyStoreName, "readonly");
+      const request = tx.objectStore(historyStoreName).get(id);
+      
+      request.onsuccess = () => {
+        const record = request.result; if(!record) return;
+        const d = record.data;
+        document.getElementById('editId').value = d.editId;
+        document.getElementById('location').value = d.location;
+        const [lat, lng] = d.location.split(',').map(Number);
+        const latlng = L.latLng(lat, lng);
+        map.setView(latlng, 16); updateMarkerAndLocation(latlng);
+
+        const [datePart, timePart] = d.datetime.split('T');
+        document.getElementById('dateInput').value = datePart;
+        document.getElementById('hourInput').value = timePart.split(':')[0];
+
+        const countSelect = document.getElementById('catCount');
+        if (d.catCountResult.includes('子ネコ')) {
+          countSelect.value = "子ネコ";
+          const cOnlyMatch = d.catCountResult.match(/子ネコ\s*(\d+)頭/);
+          if (cOnlyMatch) document.getElementById('catCountChildOnly').value = `${cOnlyMatch[1]}頭`;
+        } else if (d.catCountResult.includes('親') || d.catCountResult.includes('子')) {
+          countSelect.value = "親子";
+          const pMatch = d.catCountResult.match(/親\s*(\d+)頭/); const cMatch = d.catCountResult.match(/子\s*(\d+)頭/);
+          if (pMatch) document.getElementById('catCountParent').value = `${pMatch[1]}頭`;
+          if (cMatch) document.getElementById('catCountChild').value = `${cMatch[1]}頭`;
+        } else if (["1頭","2頭"].includes(d.catCountResult)) { countSelect.value = d.catCountResult; } 
+        else { countSelect.value = "3頭以上"; document.getElementById('catCountNum').value = d.catCountResult; }
+        toggleCatDetail();
+
+        earCutCounts["はい"] = 0; earCutCounts["いいえ"] = 0; earCutCounts["不明"] = 0;
+        if (d.earCut) {
+          if (d.earCut === "わからない") earCutCounts["不明"] = 1;
+          else {
+            d.earCut.split(', ').forEach(str => {
+              for (const key of ["はい", "いいえ", "不明"]) {
+                if (str.startsWith(key)) {
+                  const match = str.match(/\((\d+)頭\)/); earCutCounts[key] = match ? parseInt(match[1], 10) : 1;
+                } else if (key === "不明" && str.startsWith("わからない")) {
+                  earCutCounts["不明"] = 1;
+                }
+              }
+            });
+          }
+        }
+        updateEarCutUI(); updateEarCutValue();
+
+        patternCounts.clear(); selectedStandalonePatterns.clear();
+        if (d.catPattern) {
+          d.catPattern.split(', ').forEach(p => {
+            const match = p.match(/(.+?)\s*\((\d+)頭\)/);
+            if (match) patternCounts.set(match[1], parseInt(match[2], 10));
+            else if (p.startsWith('その他(')) {
+              selectedStandalonePatterns.add('その他（記述）');
+              document.getElementById('patternOtherInput').value = p.replace('その他(','').replace(')','');
+              document.getElementById('otherPatternContainer').classList.remove('hidden');
+            } else selectedStandalonePatterns.add(p);
+          });
+        }
+        renderPatternMenu(); document.getElementById('remarks').value = d.remarks || "";
+        closeModal('historyModal'); window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        document.getElementById('submitBtn').innerText = "修正して記録する";
+        document.getElementById('submitBtn').style.background = "linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)";
+      };
+    } catch(e) { console.error("履歴の復元に失敗しました", e); }
+  }
+
+  function triggerSuccessAnimation() {
+    const modal = document.getElementById('successModal');
+    const elements = ['successPin', 'successRipple', 'successText', 'successBurst'].map(id => document.getElementById(id));
+    elements.forEach(el => el.classList.remove('animate'));
+    modal.classList.add('active');
+    void elements[0].offsetWidth; 
+    elements.forEach(el => el.classList.add('animate'));
+    
+    setTimeout(() => {
+      modal.classList.remove('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1200);
+  }
+
+  async function sendDataToGAS(dataObj) {
+    const params = new URLSearchParams(); 
+    for (const key in dataObj) { params.append(key, dataObj[key]); }
+    return await fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" });
+  }
+
+  async function processSubmission(dataObj) {
+    var output = document.getElementById('output');
+    if (navigator.onLine) {
+      try {
+        await sendDataToGAS(dataObj); 
+        await saveToHistoryDB(dataObj); 
+        resetFormUI();
+        triggerSuccessAnimation();
+        loadMapMarkers();
+      } catch (error) {
+        await saveToHistoryDB(dataObj); await saveToOfflineDB(dataObj);
+        output.innerText = "通信エラーが発生しました。一時保存し、後で自動送信します。"; output.style.color = "var(--accent-primary)";
+      }
+    } else {
+      await saveToHistoryDB(dataObj); await saveToOfflineDB(dataObj);
+      resetFormUI();
+      triggerSuccessAnimation();
+    }
+    document.getElementById('submitBtn').disabled = false;
+  }
+
+  function resetFormUI() {
+    document.getElementById("catForm").reset(); document.getElementById("editId").value = "";
+    if(marker) map.removeLayer(marker); marker = null;
+    document.getElementById('locationDisplay').innerText = "場所が選択されていません";
+    earCutCounts["はい"] = 0; earCutCounts["いいえ"] = 0; earCutCounts["不明"] = 0; updateEarCutUI(); updateEarCutValue();
+    patternCounts.clear(); selectedStandalonePatterns.clear(); currentPatternCategory = null; 
+    document.getElementById('patternOtherInput').value = ""; document.getElementById('otherPatternContainer').classList.add('hidden'); renderPatternMenu();
+    document.getElementById('submitBtn').innerText = "記録する"; document.getElementById('submitBtn').style.background = "linear-gradient(135deg, #4A90E2 0%, #357ABD 100%)";
+  }
+
+  function resizeImage(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas'); let MAX_WIDTH = 800, MAX_HEIGHT = 800; let width = img.width, height = img.height;
+          if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+          else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+          canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        }; img.src = e.target.result;
+      }; reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    if(!document.getElementById('location').value) { alert("地図上で場所を選択してください。"); return; }
+    const targetTotalCount = getSelectedTotalCatCount();
+    if (targetTotalCount <= 0) { alert("ネコの頭数を選択してください。"); return; }
+
+    const earCutTotal = getEarCutTotalCount(); const patternTotal = getPatternTotalCount();
+    const isEarCutValid = (earCutTotal === targetTotalCount);
+    const isPatternValid = selectedStandalonePatterns.size > 0 || (patternTotal === targetTotalCount);
+
+    if (!isEarCutValid || !isPatternValid) { alert("ネコの頭数と耳カットの有無、もしくはネコの柄の頭数が合致しません"); return; }
+    
+    document.getElementById('submitBtn').disabled = true; document.getElementById('submitBtn').innerText = "処理中..."; document.getElementById('output').innerText = "";
+    
+    let currentEditId = document.getElementById('editId').value;
+    if (!currentEditId) currentEditId = "req_" + Date.now();
+
+    let catCountResultText = "";
+    const mainCountVal = document.getElementById('catCount').value;
+    if (mainCountVal === '3頭以上') catCountResultText = document.getElementById('catCountNum').value;
+    else if (mainCountVal === '親子') {
+      const pVal = document.getElementById('catCountParent').value || "親0頭"; const cVal = document.getElementById('catCountChild').value || "子0頭";
+      catCountResultText = `${pVal}, ${cVal}`;
+    } else if (mainCountVal === '子ネコ') {
+      catCountResultText = `子ネコ ${document.getElementById('catCountChildOnly').value}`;
+    } else catCountResultText = mainCountVal;
+
+    var dataObj = {
+      editId: currentEditId, nickname: localStorage.getItem('nekoLogName_MD') || "名無し",
+      location: document.getElementById('location').value,
+      datetime: document.getElementById('dateInput').value + 'T' + document.getElementById('hourInput').value + ':00',
+      catCountResult: catCountResultText, earCut: document.getElementById('hiddenEarCut').value,
+      catPattern: document.getElementById('hiddenCatPattern').value, remarks: document.getElementById('remarks').value, photosArray: "[]"
+    };
+    
+    var files = document.getElementById('photo').files;
+    if (files.length > 0) {
+      document.getElementById('output').innerText = "写真を圧縮中です..."; let photoArray = [];
+      for (let i = 0; i < files.length; i++) {
+        let base64 = await resizeImage(files[i]); photoArray.push({ data: base64, name: "photo_" + Date.now() + "_" + i + ".jpg" });
+      }
+      dataObj.photosArray = JSON.stringify(photoArray);
+      document.getElementById('output').innerText = "データを記録中です...";
+      processSubmission(dataObj);
+    } else processSubmission(dataObj); 
+  }
+
+  window.addEventListener('online', async () => {
+    const savedData = await getFromOfflineDB();
+    if (savedData.length > 0) {
+      for (const item of savedData) {
+        try { await sendDataToGAS(item.data); await deleteFromOfflineDB(item.key); } 
+        catch (e) { console.error("同期失敗", e); }
+      }
+    }
+  });
+</script>
+</body>
+</html>
