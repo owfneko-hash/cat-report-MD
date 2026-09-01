@@ -776,7 +776,8 @@
     openModalWithHistory('mapModal');
     const loader = document.getElementById('mapLoadingOverlay'); if (loader) loader.classList.remove('hidden');
     if (!aggMap) {
-      aggMap = L.map('aggregatedMap', { zoomControl: false }).setView([25.950, 131.310], 13);
+      // 常に南大東島の中心が表示されるように座標とズームを変更
+      aggMap = L.map('aggregatedMap', { zoomControl: false }).setView([25.844, 131.245], 14);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(aggMap);
       L.control.zoom({ position: 'bottomright' }).addTo(aggMap); markersLayer = L.layerGroup().addTo(aggMap);
     }
@@ -837,7 +838,8 @@
   }
 
   function openHistoryModal() { openModalWithHistory('historyModal'); loadHistoryList(); }
-  var map = L.map('map').setView([25.950, 131.310], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); var marker;
+  // 入力フォームのマップも常に南大東島が表示されるように座標とズームを変更
+  var map = L.map('map').setView([25.844, 131.245], 14); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); var marker;
   map.on('click', function(e) { updateMarkerAndLocation(e.latlng); });
   function setNowDatetime() { const now = new Date(); const roundedTime = new Date(now.getTime() + 29 * 60 * 1000); document.getElementById('dateInput').value = roundedTime.getFullYear() + '-' + String(roundedTime.getMonth()+1).padStart(2, '0') + '-' + String(roundedTime.getDate()).padStart(2, '0'); document.getElementById('hourInput').value = String(roundedTime.getHours()).padStart(2, '0'); }
   function goToCurrentLocation() {
