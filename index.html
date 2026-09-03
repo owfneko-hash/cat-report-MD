@@ -527,10 +527,10 @@
   <div class="header-container">
     <div class="title-group">
       <img src="icon-neko.png" alt="ネコアイコン" class="title-icon">
-      <h2>ねこログ 南大東</h2>
+      <!-- ▼ スマホで改行されないようにシンプルに「ねこログ」へ変更 ▼ -->
+      <h2>ねこログ</h2>
       <span class="title-sub-text">ネコ目撃情報<br>記録webアプリ</span>
     </div>
-    <!-- 右側に送信履歴ボタンと設定ボタンを丸で配置 -->
     <div class="header-buttons">
       <button type="button" class="btn-circle-icon" onclick="openHistoryModal()" title="送信履歴">📝</button>
       <button type="button" class="btn-circle-icon" onclick="openSettingsModal()" title="設定">⚙️</button>
@@ -783,8 +783,8 @@
     openModalWithHistory('mapModal');
     const loader = document.getElementById('mapLoadingOverlay'); if (loader) loader.classList.remove('hidden');
     if (!aggMap) {
-      // 常に南大東島の中心が表示されるように座標とズームを変更
-      aggMap = L.map('aggregatedMap', { zoomControl: false }).setView([25.844, 131.245], 14);
+      // ▼ 南大東島が画面にすっぽり収まるようにズームレベルを 14 → 13 に変更 ▼
+      aggMap = L.map('aggregatedMap', { zoomControl: false }).setView([25.844, 131.245], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(aggMap);
       L.control.zoom({ position: 'bottomright' }).addTo(aggMap); markersLayer = L.layerGroup().addTo(aggMap);
     }
@@ -845,8 +845,8 @@
   }
 
   function openHistoryModal() { openModalWithHistory('historyModal'); loadHistoryList(); }
-  // 入力フォームのマップも常に南大東島が表示されるように座標とズームを変更
-  var map = L.map('map').setView([25.844, 131.245], 14); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); var marker;
+  // ▼ フォーム側のマップもズームレベルを 14 → 13 に変更 ▼
+  var map = L.map('map').setView([25.844, 131.245], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); var marker;
   map.on('click', function(e) { updateMarkerAndLocation(e.latlng); });
   function setNowDatetime() { const now = new Date(); const roundedTime = new Date(now.getTime() + 29 * 60 * 1000); document.getElementById('dateInput').value = roundedTime.getFullYear() + '-' + String(roundedTime.getMonth()+1).padStart(2, '0') + '-' + String(roundedTime.getDate()).padStart(2, '0'); document.getElementById('hourInput').value = String(roundedTime.getHours()).padStart(2, '0'); }
   function goToCurrentLocation() {
