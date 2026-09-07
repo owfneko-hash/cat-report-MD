@@ -45,7 +45,7 @@
       font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif; 
       margin: 0; 
       padding: 6px; 
-      padding-bottom: 120px;
+      padding-bottom: 120px; /* ボトムナビ用の余白をしっかり確保 */
       background-color: var(--bg-color); 
       color: var(--text-main); 
       -webkit-tap-highlight-color: transparent;
@@ -641,19 +641,17 @@
       else { document.getElementById('stepName').classList.remove('hidden'); }
     }
 
-    // 起動時にオフラインに残っているデータを自動送信
+    // 起動時にオフライン残存データを自動で裏側送信
     if (navigator.onLine) {
-      setTimeout(async () => {
-        const savedData = await getFromOfflineDB();
-        if (savedData.length > 0) {
-          for (const item of savedData) {
-            try { await sendDataToGAS(item.data); await deleteFromOfflineDB(item.key); } 
-            catch (e) { console.error("同期失敗", e); }
-          }
-          updateOfflineCount();
-        }
+      setTimeout(() => {
+        syncOfflineData();
       }, 1000);
     }
+  });
+
+  // オンライン復帰時にも自動送信
+  window.addEventListener('online', () => {
+    syncOfflineData();
   });
 
   let lastScrollY = window.scrollY;
@@ -1062,8 +1060,21 @@
     if (!confirm("この記録を削除しますか？\n（サーバー上からも完全に削除されます）")) return;
     try {
       const params = new URLSearchParams(); params.append('action', 'delete'); params.append('editId', id);
-      fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" });
-      await deleteFromHistoryDB(id); loadHistoryList(); loadMapMarkers();
+      
+      // 削除もエラーを無視して強行
+      fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" }).catch(e => console.log(e));
+      
+      await deleteFromHistoryDB(id); 
+      
+      // オフラインキューの中に同じIDがあればついでに消す
+      const offlineData = await getFromOfflineDB();
+      for (const item of offlineData) {
+        if (item.data.editId === id) await deleteFromOfflineDB(item.key);
+      }
+
+      updateOfflineCount();
+      loadHistoryList(); 
+      loadMapMarkers();
     } catch(e) { console.error(e); alert("削除中にエラーが発生しました。"); }
   }
 
@@ -1140,7 +1151,7 @@
 
   function triggerSuccessAnimation() {
     const modal = document.getElementById('successModal');
-    const elements = ['successPin', 'successRipple', 'successText'].map(id => document.getElementById(id));
+    const elements = ['successPin', 'successRipple', 'successText', 'successBurst'].map(id => document.getElementById(id));
     elements.forEach(el => el.classList.remove('animate'));
     modal.classList.add('active');
     void elements[0].offsetWidth; 
@@ -1152,52 +1163,65 @@
     }, 1200);
   }
 
-  // ▼ 通信エラー回避（エラーを握り潰す） ▼
+  // ▼ セキュリティによるリダイレクトエラーを無視して送信する関数 ▼
   async function sendDataToGAS(dataObj) {
     const params = new URLSearchParams(); 
     for (const key in dataObj) { params.append(key, dataObj[key]); }
     try {
       await fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" });
     } catch (e) {
-      if (!navigator.onLine) throw e;
+      if (!navigator.onLine) throw e; // 完全にオフラインの時だけエラーを出す
     }
   }
 
-  async function processSubmission(dataObj) {
-    var output = document.getElementById('output');
-    if (navigator.onLine) {
+  // ▼ バックグラウンドで溜まったデータを送信する関数 ▼
+  async function syncOfflineData() {
+    if (!navigator.onLine) {
+      updateOfflineCount();
+      return;
+    }
+    const savedData = await getFromOfflineDB();
+    if (savedData.length === 0) {
+      updateOfflineCount();
+      return;
+    }
+    
+    let isUpdated = false;
+    for (const item of savedData) {
       try {
-        await sendDataToGAS(dataObj); 
-        await saveToHistoryDB(dataObj); 
-
-        // ▼ 送信成功時、同じIDのオフライン保存データ（送信待ち）があれば削除する ▼
-        const offlineData = await getFromOfflineDB();
-        for (const item of offlineData) {
-          if (item.data.editId === dataObj.editId) {
-            await deleteFromOfflineDB(item.key);
-          }
-        }
-
-        resetFormUI();
-        triggerSuccessAnimation();
-        loadMapMarkers();
-      } catch (error) {
-        await saveToHistoryDB(dataObj); await saveToOfflineDB(dataObj);
-        output.innerText = "通信エラーが発生しました。一時保存し、後で自動送信します。"; output.style.color = "var(--accent-primary)";
+        await sendDataToGAS(item.data); 
+        await deleteFromOfflineDB(item.key);
+        isUpdated = true;
+      } catch (e) {
+        console.error("同期失敗", e);
       }
-    } else {
-      await saveToHistoryDB(dataObj); await saveToOfflineDB(dataObj);
-      resetFormUI();
-      triggerSuccessAnimation();
     }
     updateOfflineCount();
+    if (isUpdated) {
+      loadMapMarkers();
+    }
+  }
+
+  // ▼ 送信ボタンを押したときの処理（問答無用で成功させる Optimistic UI） ▼
+  async function processSubmission(dataObj) {
+    // 1. まずは必ずローカルの履歴と「送信待ち（オフラインDB）」に入れる
+    await saveToOfflineDB(dataObj);
+    await saveToHistoryDB(dataObj); 
+    
+    // 2. 待たせずに即座にフォームをリセットし、完了モーションを出して上に戻る！
+    resetFormUI();
+    triggerSuccessAnimation();
     document.getElementById('submitBtn').disabled = false;
+
+    // 3. その後、裏側でこっそり送信処理を走らせる（成功したら送信待ちから消える）
+    syncOfflineData();
   }
 
   function resetFormUI() {
     document.getElementById("catForm").reset(); document.getElementById("editId").value = "";
     if(marker) map.removeLayer(marker); marker = null;
     document.getElementById('locationDisplay').innerText = "場所が選択されていません";
+    document.getElementById('output').innerText = ""; // テキストも綺麗にクリアする
     earCutCounts["はい"] = 0; earCutCounts["いいえ"] = 0; earCutCounts["不明"] = 0; updateEarCutUI(); updateEarCutValue();
     patternCounts.clear(); selectedStandalonePatterns.clear(); currentPatternCategory = null; 
     document.getElementById('patternOtherInput').value = ""; document.getElementById('otherPatternContainer').classList.add('hidden'); renderPatternMenu();
@@ -1262,21 +1286,10 @@
         let base64 = await resizeImage(files[i]); photoArray.push({ data: base64, name: "photo_" + Date.now() + "_" + i + ".jpg" });
       }
       dataObj.photosArray = JSON.stringify(photoArray);
-      document.getElementById('output').innerText = "データを記録中です...";
+      document.getElementById('output').innerText = "データを送信しています...";
       processSubmission(dataObj);
     } else processSubmission(dataObj); 
   }
-
-  window.addEventListener('online', async () => {
-    const savedData = await getFromOfflineDB();
-    if (savedData.length > 0) {
-      for (const item of savedData) {
-        try { await sendDataToGAS(item.data); await deleteFromOfflineDB(item.key); } 
-        catch (e) { console.error("同期失敗", e); }
-      }
-      updateOfflineCount();
-    }
-  });
 </script>
 </body>
 </html>
