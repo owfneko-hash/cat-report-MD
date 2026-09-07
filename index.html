@@ -311,6 +311,17 @@
 <!-- オフライン送信待ちバッジ -->
 <div id="offlineBadge" class="offline-badge">送信待ち: 0件</div>
 
+<!-- ▼ 記録完了モーション用モーダル（欠落していた要素を追加） ▼ -->
+<div id="successModal" class="modal-success">
+  <div class="success-stage">
+    <div id="successRipple" class="success-ripple"></div>
+    <div id="successPin" class="success-pin-wrapper">
+      <img src="icon-neko.png" style="width: 50px; height: auto;">
+    </div>
+    <div id="successText" class="success-status-text">記録完了！</div>
+  </div>
+</div>
+
 <!-- 初回起動用 ウェルカムモーダル -->
 <div id="welcomeModal" class="modal">
   <div id="stepInstall" class="modal-content hidden" style="max-width: 400px;">
@@ -1153,11 +1164,16 @@
 
   function triggerSuccessAnimation() {
     const modal = document.getElementById('successModal');
+    // もし要素が存在しない場合は実行しない（エラー回避）
+    if (!modal) return;
+    
     const elements = ['successPin', 'successRipple', 'successText'].map(id => document.getElementById(id));
-    elements.forEach(el => el.classList.remove('animate'));
+    elements.forEach(el => { if(el) el.classList.remove('animate'); });
+    
     modal.classList.add('active');
-    void elements[0].offsetWidth; 
-    elements.forEach(el => el.classList.add('animate'));
+    void modal.offsetWidth; // reflow
+    
+    elements.forEach(el => { if(el) el.classList.add('animate'); });
     
     setTimeout(() => {
       modal.classList.remove('active');
@@ -1165,15 +1181,18 @@
     }, 1200);
   }
 
-  // ▼ 通信エラー回避（エラーを握り潰す） ▼
+  // ▼ 通信処理（エラー時はthrowして呼び出し元で再送キューに入れる） ▼
   async function sendDataToGAS(dataObj) {
     const params = new URLSearchParams(); 
     for (const key in dataObj) { params.append(key, dataObj[key]); }
-    try {
-      await fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" });
-    } catch (e) {
-      if (!navigator.onLine) throw e; 
-    }
+    
+    // fetchが通信エラーで失敗した場合は例外が飛び、catch側で拾われます
+    await fetch(gasURL, { 
+      method: "POST", 
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
+      body: params, 
+      mode: "no-cors" 
+    });
   }
 
   // ▼ バックグラウンドで溜まったデータを送信する関数 ▼
@@ -1204,32 +1223,32 @@
     }
   }
 
-  // ▼ 最強の楽観的UI処理（ボタンを押したら何があっても即成功モーション！） ▼
+  // ▼ 状況に応じた送信処理とUI表示 ▼
   async function processSubmission(dataObj) {
     document.getElementById('output').innerText = ""; 
-
-    // 【1】ボタンを押した瞬間にフォームを空にして、一番上にスクロール＆完了モーションを出す！
-    resetFormUI();
-    triggerSuccessAnimation();
     document.getElementById('submitBtn').disabled = false;
 
-    // 【2】裏側で静かに送信処理を実行する
     if (navigator.onLine) {
-      try {
-        await sendDataToGAS(dataObj); 
-        await saveToHistoryDB(dataObj); 
-        
-        // 送信成功時は裏でマップピンを更新しておく
-        setTimeout(() => { loadMapMarkers(); }, 1500);
+      // --- オンライン時：即完了モーション＆裏側送信 ---
+      resetFormUI();
+      triggerSuccessAnimation();
 
-      } catch (error) {
-        // もし電波が悪くて通信エラーになったら、ここで初めて「送信待ち」に入れる
+      // awaitで待たずに裏で送信させることで、UI操作をブロックしません
+      sendDataToGAS(dataObj).then(() => {
+        saveToHistoryDB(dataObj);
+        setTimeout(() => { loadMapMarkers(); }, 1500);
+      }).catch(async (e) => {
+        // もし途中で通信が切れたりした場合のみ、オフラインDBへ退避します
         await saveToOfflineDB(dataObj);
         await saveToHistoryDB(dataObj);
         updateOfflineCount();
-      }
+      });
+      
     } else {
-      // 完全オフライン時も「送信待ち」に入れる
+      // --- オフライン時：送信待ちとして保存 ---
+      resetFormUI();
+      alert("現在オフラインです。\nデータは一時保存され、オンライン復帰後に自動で送信されます。");
+      
       await saveToOfflineDB(dataObj);
       await saveToHistoryDB(dataObj);
       updateOfflineCount();
