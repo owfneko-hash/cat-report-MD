@@ -91,7 +91,6 @@
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
       width: calc(100% - 32px); max-width: 400px; height: 64px;
       z-index: 1000;
-      /* 全体に綺麗な影を落とす（丸い出っ張りにも追従する） */
       filter: drop-shadow(0 6px 16px rgba(0,0,0,0.08)); 
       transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
       pointer-events: none;
@@ -109,11 +108,9 @@
       padding: 0 10px; box-sizing: border-box; pointer-events: auto;
     }
 
-    /* ▼ 丸ボタンの後ろを白く出っ張らせる背景 ▼ */
     .bottom-nav::before {
       content: "";
       position: absolute;
-      /* ボタンの中心とピッタリ重なるように計算した出っ張り */
       top: -30px; left: 50%; transform: translateX(-50%);
       width: 96px; height: 96px;
       background: rgba(255, 255, 255, 0.95);
@@ -123,7 +120,6 @@
 
     .nav-spacer { width: 90px; flex-shrink: 0; pointer-events: none; }
 
-    /* 送信履歴・設定ボタン */
     .nav-side-btn {
       background: #FFFFFF; 
       border: 1.5px solid rgba(74, 144, 226, 0.25); 
@@ -135,7 +131,6 @@
     }
     .nav-side-btn:active { background: #E3F2FD; transform: scale(0.95); }
 
-    /* 中央のメインボタン（出っ張りの中心に配置） */
     .nav-fab {
       position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
       width: 68px; height: 68px; border-radius: 50%; border: none;
@@ -241,7 +236,7 @@
     }
     .map-floating-count:active { transform: scale(0.95); }
 
-    /* 右下の操作アイコン群（現在地・フィルター） */
+    /* 右下の操作アイコン群 */
     .map-floating-actions {
       position: absolute; bottom: 30px; right: 15px; z-index: 1000;
       display: flex; flex-direction: column; gap: 12px;
@@ -650,6 +645,7 @@
     }
   });
 
+  // ボトムナビゲーション スクロール制御
   let lastScrollY = window.scrollY;
   window.addEventListener('scroll', () => {
     const currentScrollY = window.scrollY;
@@ -662,7 +658,9 @@
     lastScrollY = currentScrollY;
   });
 
-  function showNav() { document.getElementById('navWrapper').classList.remove('nav-hidden'); }
+  function showNav() {
+    document.getElementById('navWrapper').classList.remove('nav-hidden');
+  }
 
   function initCatCountOptions() {
     const numSelect = document.getElementById('catCountNum'); numSelect.innerHTML = '<option value="">選択してください</option>';
@@ -1147,7 +1145,11 @@
   async function sendDataToGAS(dataObj) {
     const params = new URLSearchParams(); 
     for (const key in dataObj) { params.append(key, dataObj[key]); }
-    return await fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" });
+    try {
+      await fetch(gasURL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params, mode: "no-cors" });
+    } catch (e) {
+      if (!navigator.onLine) throw e;
+    }
   }
 
   async function processSubmission(dataObj) {
