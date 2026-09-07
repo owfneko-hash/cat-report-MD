@@ -45,7 +45,7 @@
       font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif; 
       margin: 0; 
       padding: 6px; 
-      padding-bottom: 120px; /* ボトムナビ用の余白をしっかり確保 */
+      padding-bottom: 120px;
       background-color: var(--bg-color); 
       color: var(--text-main); 
       -webkit-tap-highlight-color: transparent;
@@ -225,7 +225,6 @@
     }
     .map-floating-close:active { transform: scale(0.9); }
 
-    /* 左上の丸い件数表示バッジ */
     .map-floating-count {
       position: absolute; top: 15px; left: 15px; z-index: 1000;
       height: 36px; padding: 0 12px; border-radius: 18px; 
@@ -236,7 +235,6 @@
     }
     .map-floating-count:active { transform: scale(0.95); }
 
-    /* 右下の操作アイコン群 */
     .map-floating-actions {
       position: absolute; bottom: 30px; right: 15px; z-index: 1000;
       display: flex; flex-direction: column; gap: 12px;
@@ -257,7 +255,6 @@
     .custom-cluster { background: rgba(74, 144, 226, 0.9); border: 3px solid white; color: white; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0,0,0,0.3); font-size: 14px; }
     .custom-cluster-large { background: rgba(53, 122, 189, 0.95); transform: scale(1.1); }
 
-    /* ゲーム風ローディング画面 */
     .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 247, 251, 0.95); backdrop-filter: blur(4px); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; transition: opacity 0.3s ease, visibility 0.3s ease; }
     .loading-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
     .loading-text { color: var(--accent-primary); font-size: 18px; font-weight: 900; letter-spacing: 2px; margin-top: 10px; }
@@ -643,9 +640,22 @@
       if (!isStandalone) { document.getElementById('stepInstall').classList.remove('hidden'); if (isIos) { toggleGuide('welcomeIos'); } else { toggleGuide('welcomeAndroid'); } } 
       else { document.getElementById('stepName').classList.remove('hidden'); }
     }
+
+    // 起動時にオフラインに残っているデータを自動送信
+    if (navigator.onLine) {
+      setTimeout(async () => {
+        const savedData = await getFromOfflineDB();
+        if (savedData.length > 0) {
+          for (const item of savedData) {
+            try { await sendDataToGAS(item.data); await deleteFromOfflineDB(item.key); } 
+            catch (e) { console.error("同期失敗", e); }
+          }
+          updateOfflineCount();
+        }
+      }, 1000);
+    }
   });
 
-  // ボトムナビゲーション スクロール制御
   let lastScrollY = window.scrollY;
   window.addEventListener('scroll', () => {
     const currentScrollY = window.scrollY;
@@ -1130,7 +1140,7 @@
 
   function triggerSuccessAnimation() {
     const modal = document.getElementById('successModal');
-    const elements = ['successPin', 'successRipple', 'successText', 'successBurst'].map(id => document.getElementById(id));
+    const elements = ['successPin', 'successRipple', 'successText'].map(id => document.getElementById(id));
     elements.forEach(el => el.classList.remove('animate'));
     modal.classList.add('active');
     void elements[0].offsetWidth; 
@@ -1142,6 +1152,7 @@
     }, 1200);
   }
 
+  // ▼ 通信エラー回避（エラーを握り潰す） ▼
   async function sendDataToGAS(dataObj) {
     const params = new URLSearchParams(); 
     for (const key in dataObj) { params.append(key, dataObj[key]); }
@@ -1158,6 +1169,15 @@
       try {
         await sendDataToGAS(dataObj); 
         await saveToHistoryDB(dataObj); 
+
+        // ▼ 送信成功時、同じIDのオフライン保存データ（送信待ち）があれば削除する ▼
+        const offlineData = await getFromOfflineDB();
+        for (const item of offlineData) {
+          if (item.data.editId === dataObj.editId) {
+            await deleteFromOfflineDB(item.key);
+          }
+        }
+
         resetFormUI();
         triggerSuccessAnimation();
         loadMapMarkers();
